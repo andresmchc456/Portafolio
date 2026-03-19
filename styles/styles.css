@@ -270,6 +270,29 @@ body {
 }
 
 
+
+/* Hace que la página ocupe toda la pantalla */
+html, body {
+    height: 100%;
+    margin: 0;
+}
+
+/* Activa layout vertical */
+body {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Hace que el contenido crezca */
+.features {
+    flex: 1;
+}
+
+/* Asegura que el footer se empuje abajo */
+#footer {
+    margin-top: auto;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .navbar {

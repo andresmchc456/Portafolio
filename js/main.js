@@ -1,68 +1,68 @@
-// Función para cargar un componente dinámicamente
+//  Cargar componente dinámicamente
 async function loadComponent(id, url) {
     try {
-        const response = await fetch(url);
-        if (!response.ok) {
-            throw new Error(`Error al cargar ${url}: ${response.statusText}`);
-        }
-        const html = await response.text();
-        document.getElementById(id).innerHTML = html;
-    } catch (error) {
-        console.error(`Error cargando componente ${id}:`, error);
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(res.statusText);
+
+        document.getElementById(id).innerHTML = await res.text();
+    } catch (err) {
+        console.error(`Error cargando ${id}:`, err);
     }
 }
 
-// Detectar si estamos en index.html (raíz) o en una página dentro de views/
-function getComponentUrl(componentName) {
-    const currentPage = window.location.pathname;
-    if (currentPage.includes('/views/')) {
-        // Si estamos en una página dentro de views/, usar rutas relativas hacia arriba
-        return `../views/${componentName}.html`;
-    }
-    // Si estamos en index.html (raíz), usar rutas normales
-    return `views/${componentName}.html`;
+//  Detectar si estamos dentro de /views/
+const isInViews = window.location.pathname.includes('/views/');
+
+// Obtener ruta del componente
+function getComponentUrl(name) {
+    return isInViews
+        ? `../views/${name}.html`
+        : `views/${name}.html`;
 }
 
-// Determinar la página actual y marcar el link activo en la navbar
+//  Activar link activo automáticamente
 function activateNavLink() {
-    const currentPage = window.location.pathname;
-    const navLinks = document.querySelectorAll('.nav-link');
-    
-    navLinks.forEach(link => {
-        link.classList.remove('active');
-        
-        const dataPage = link.getAttribute('data-page');
-        
-        if (currentPage.includes('/services.html') && dataPage === 'services') {
+    const current = window.location.pathname;
+
+    document.querySelectorAll('.nav-link').forEach(link => {
+        const page = link.dataset.page; // data-page
+
+        // Activa si la URL incluye el nombre de la página
+        if (
+            (page === 'inicio' && !isInViews) ||
+            current.includes(`${page}.html`)
+        ) {
             link.classList.add('active');
-        } else if (!currentPage.includes('/views/') && dataPage === 'inicio') {
-            link.classList.add('active');
+        } else {
+            link.classList.remove('active');
         }
     });
 }
 
-// Cargar todos los componentes al cargar la página
+//  Inicialización
 document.addEventListener('DOMContentLoaded', async () => {
-    const componentsToLoad = ['navbar', 'footer'];
-    
-    // Verificar si la página actual es index.html y tiene más componentes
-    const currentPage = window.location.pathname;
-    if (!currentPage.includes('/views/')) {
-        componentsToLoad.unshift('hero');
-        componentsToLoad.splice(2, 0, 'features', 'content');
+
+    // Componentes base (siempre)
+    let components = ['navbar', 'footer'];
+
+    // Componentes solo para index
+    if (!isInViews) {
+        components = [
+            'navbar',
+            'hero',
+            'features',
+            'content',
+            'portfolio',
+            'footer'
+        ];
     }
 
-    const components = componentsToLoad.map(component => ({
-        id: component,
-        url: getComponentUrl(component)
-    }));
+    // Cargar todos en paralelo
+    await Promise.all(
+        components.map(c => loadComponent(c, getComponentUrl(c)))
+    );
 
-    // Cargar componentes en paralelo
-    const promises = components.map(component => loadComponent(component.id, component.url));
-    await Promise.all(promises);
-    
-    // Activar el link de navegación correcto después de cargar los componentes
     activateNavLink();
 
-    console.log('Todos los componentes han sido cargados.');
+    console.log('Componentes cargados');
 });
